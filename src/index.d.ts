@@ -13,7 +13,7 @@ declare global {
     }
   }
     interface Request {
-      user?: User; // make it non-optional
+      user?: User; 
     }
 }
 
