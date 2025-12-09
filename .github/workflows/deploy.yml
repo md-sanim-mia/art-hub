@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /var/www/arthurgrant-backend
+            cd /var/www/art-hub
             git pull origin main
             npm install --production
             pm2 restart all
