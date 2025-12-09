@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                        String              @id @default(uuid())
+  fullName                String
+  email                     String              @unique
+  password                  String
+    profilePic              String?
+  passwordChangedAt         DateTime?
+  isVerified                Boolean             @default(false)
+  isResetPassword           Boolean             @default(false)
+  canResetPassword          Boolean             @default(false)
+  isResentOtp               Boolean             @default(false)
+  role                      UserRole            @default(USER)
+  isSubscribed              Boolean             @default(false)
+  planExpiration            DateTime?
+  lastActiveAt              DateTime?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  resetPasswordOTP          String?
+  resetPasswordOTPExpiresAt DateTime?
+  Notifications             Notification[]
+  Profile                   Profile?
+  Subscription              Subscription?
+  review Review[]
+  @@map("users")
+}
+
+model Plan {
+  id            String         @id @default(uuid())
+  planName      String
+  amount        Float
+  PlanType      PlanType       @default(FREE)
+  currency      String?
+  interval      Interval       @default(month)
+  intervalCount Int
+  freeTrialDays Int?
+  productId     String
+  priceId       String
+  active        Boolean
+  description   String?
+  maxMembers    Int?
+  features      Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  Subscription  Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id              String               @id @default(uuid())
+  userId          String               @unique
+  planId          String
+  startDate       DateTime
+  endDate         DateTime?
+  amount          Float
+  stripePaymentId String               @unique
+  paymentStatus   PaymentStatus        @default(PENDING)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  plan            Plan                 @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Blog {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  image       String
+  category    String
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Profile {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  birthDate   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  batch       String?
+  course      String
+  department  String?
+  institution String?
+  year        String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OtpModel {
+  id          String   @id @default(uuid())
+  email       String
+  code        String
+  isVerified  Boolean  @default(false)
+  generatedAt DateTime @default(now())
+  expiresAt   DateTime
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String?
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+enum NotificationType {
+  SUBMISSION
+  FEEDBACK
+  REMINDER
+  SYSTEM
+}
+
+enum Interval {
+  lifetime
+  week
+  month
+  year
+}
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  CANCELED
+  REFUNDED
+}
+enum Status {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+enum PlanType {
+  FAMILY
+  FREE
+  PREMIUM
+  LIFETIME
+}
