@@ -23,7 +23,7 @@ const main = async () => {
 
 main();
 
-// Graceful shutdown handling
+
 const shutdown = () => {
   console.log("🛑 Shutting down servers...");
 

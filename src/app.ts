@@ -16,7 +16,7 @@ const app: Application = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-app.use(cors({ origin: ["http://localhost:3000","http://206.162.244.135:9998","https://manifex.org","https://dashboard.manifex.org"], credentials: true }));
+app.use(cors({ origin: ["http://localhost:3000","http://localhost:3001"], credentials: true }));
 
 // app routes
 app.use(passport.initialize());
