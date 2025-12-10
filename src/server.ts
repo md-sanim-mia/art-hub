@@ -2,12 +2,15 @@ import app from "./app";
 import { Server } from "http";
 import config from "./app/config";
 import { seedSuperAdmin } from "./seedSuperAdmin";
+import { connectRedis, disconnectRedis } from "./app/config/redis";
 
 
 let server: Server;
 
 const main = async () => {
   try {
+
+      await connectRedis();
     await seedSuperAdmin();
 
     server = app.listen(config.port, () => {
@@ -26,7 +29,7 @@ main();
 
 const shutdown = () => {
   console.log("🛑 Shutting down servers...");
-
+ disconnectRedis()
   if (server) {
     server.close(() => {
       console.log("Servers closed");

@@ -4,8 +4,6 @@ import { UserRole } from "@prisma/client";
 import { blogController } from "./blog.contllors";
 import { imageUpload } from "../../config/multer-config";
 
-// import validateRequest from "../middlewares/validateRequest";
-// import { blogValidationSchema } from "./blog.validation";
 
 const router = Router();
 
@@ -13,7 +11,7 @@ const router = Router();
 router.post(
   "/create-blog",
   auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
-  // validateRequest(blogValidationSchema),
+
    imageUpload.single("file"),
   (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -22,7 +20,7 @@ router.post(
       console.log(req.body)
       next();
     } catch (err) {
-      next(err); // error middleware এ পাঠাবে
+      next(err);
     }
   },
   blogController.createBlog
@@ -31,14 +29,13 @@ router.post(
 // Get All Blogs
 router.get(
   "/",
-//   auth(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.USER),
+
   blogController.getAllBlogs
 );
 
 // Get Single Blog
 router.get(
   "/:id",
-//   auth(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.USER),
   blogController.getSingleBlog
 );
 
@@ -55,7 +52,7 @@ router.patch(
       console.log(req.body)
       next();
     } catch (err) {
-      next(err); // error middleware এ পাঠাবে
+      next(err); 
     }
   },
   blogController.updateBlog

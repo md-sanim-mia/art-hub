@@ -1,8 +1,10 @@
+import { json } from "stream/consumers";
+import redisClient from "../../config/redis";
 import prisma from "../../utils/prisma";
-
+const CACHE_TTL = 10 * 60
 const createBlog = async (payload: any) => {
-  const result = await prisma.$transaction(async (tx) => {
-    const blog = await tx.blog.create({
+  try {
+    const blog = await prisma.blog.create({
       data: {
         title: payload.title,
         description: payload.description,
@@ -12,22 +14,41 @@ const createBlog = async (payload: any) => {
       },
     });
 
+    // Invalidate cache
+    await redisClient.del("blogs:all");
+
     console.log("Blog created:", blog);
     return blog;
-  });
-  return result;
+  } catch (error) {
+    console.error("Error creating blog:", error);
+    throw error;
+  }
 };
 
 const getAllBlogs = async () => {
+
+
+  const cached =await redisClient.get("blogs:all")
+  console.log("check",JSON.stringify(cached))
+  if(cached) return JSON.parse(cached)
   const blogs = await prisma.blog.findMany({
     orderBy: {
       createdAt: "desc",
     },
   });
+
+  await redisClient.setEx("blogs:all",CACHE_TTL,JSON.stringify(blogs))
   return blogs;
 };
 
 const getSingleBlog = async (id: string) => {
+
+  const cached=await redisClient.get(`blog:${id}`)
+
+  if (cached) return JSON.stringify(cached)
+
+    console.log(JSON.stringify(cached))
+
   const result = await prisma.$transaction(async (tx) => {
     const blog = await tx.blog.findUnique({
       where: { id },
@@ -47,6 +68,8 @@ const getSingleBlog = async (id: string) => {
     return updated;
   });
 
+
+  await redisClient.setEx(`blog:${id}`,CACHE_TTL,JSON.stringify(result))
   return result;
 };
 
@@ -61,6 +84,9 @@ const updateBlog = async (id: string, payload: Partial<any>) => {
     });
 
     console.log("Blog updated:", updatedBlog);
+
+    await redisClient.del("blogs:all")
+    await redisClient.del(`blog:${id}`)
     return updatedBlog;
   });
   return result;
@@ -75,6 +101,9 @@ const deleteBlog = async (id: string) => {
     console.log("Blog deleted:", deleted);
     return deleted;
   });
+
+  await redisClient.del("blogs:all")
+  await redisClient.del(`blog:${id}`)
   return result;
 };
 
