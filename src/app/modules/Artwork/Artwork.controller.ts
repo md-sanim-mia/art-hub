@@ -6,10 +6,18 @@ import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 
 const createArtwork = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user?.id;
-  const payload = { ...req.body, userId };
+  const userId = req.user?.id as string
+
   
-  const result = await artworkService.createArtwork(payload);
+          const file = req.file;
+     
+      if (!file) {
+        throw new Error("Image file is required");
+      }
+      const data = { ...req.body,  imageUrl: file?.path };
+
+      console.log(data,userId)
+  const result = await artworkService.createArtwork(userId,data);
   
   sendResponse(res, {
     statusCode: httpStatus.CREATED,

@@ -22,14 +22,17 @@ const invalidateArtworkCache = async () => {
   await redisClient.del("artworks:featured");
   await redisClient.del("artworks:stats");
 };
-const createArtwork = async (payload: Artwork): Promise<Artwork> => {
-  if (!payload.title || !payload.imageUrl || !payload.userId) {
+const createArtwork = async ( userId:string,payload: Artwork): Promise<Artwork> => {
+
+
+    console.log(payload,userId)
+  if (!payload?.title || !payload.imageUrl || !userId) {
     throw new AppError(httpStatus.BAD_REQUEST, "Title, image URL, and user ID are required");
   }
 
   const result = await prisma.artwork.create({
     data: {
-      userId: payload.userId,
+      userId: userId,
       title: payload.title,
       year: payload.year ,
       framed: payload.framed ,
@@ -74,6 +77,8 @@ const getAllArtworks = async (query: Record<string, any>) => {
     queryBuilder.execute(),
     queryBuilder.countTotal(),
   ]);
+
+  console.log("check art work",artworks)
 
 
    await redisClient.setEx(cacheKey,CACHE_TTL,JSON.parse(artworks))

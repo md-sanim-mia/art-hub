@@ -5,6 +5,7 @@ import { UserRoutes } from "../modules/user/user.routes";
 import { SubscriptionRoutes } from "../modules/subscription/subscription.route";
 import { blogRouter } from "../modules/blogs/blog.route";
 import { contactRoute } from "../modules/contact/contact.route";
+import { artworkRoutes } from "../modules/Artwork/Artwork.route";
 
 
 const router = Router();
@@ -34,6 +35,10 @@ const moduleRoutes = [
   {
     path: "/contacts",
     route: contactRoute,
+  },
+  {
+    path: "/artworks",
+    route: artworkRoutes,
   },
   
 

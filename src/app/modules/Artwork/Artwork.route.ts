@@ -1,13 +1,26 @@
-import { Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import { artworkController } from "./Artwork.controller";
 import auth from "../../middlewares/auth";
 import { UserRole } from "@prisma/client";
+import { imageUpload } from "../../config/multer-config";
 
 const router = Router();
 
 router.post(
   "/create",
   auth("USER", "ADMIN", "SUPER_ADMIN",UserRole.ORGANIZATION),
+  
+   imageUpload.single("file"),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      req.body = JSON.parse(req.body.data);
+
+      console.log(req.body)
+      next();
+    } catch (err) {
+      next(err);
+    }
+  },
   artworkController.createArtwork
 );
 
