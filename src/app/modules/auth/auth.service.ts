@@ -268,15 +268,14 @@ const forgotPassword = async (email: string) => {
     throw new ApiError(status.UNAUTHORIZED, "User account is not verified!");
   }
 
-  // Generate 6-digit OTP
+ 
   const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   const otp = generateOTP();
-  const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+  const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); 
 
-  // Save OTP in DBinit
   await prisma.user.update({
     where: { email },
     data: {
@@ -341,7 +340,6 @@ const otpGenerate = async (email: string) => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-  // Clear any existing unverified OTPs for this email
   await prisma.otpModel.deleteMany({
     where: {
       email: email.toLowerCase().trim(),
@@ -926,6 +924,360 @@ export const refreshToken = async (token: string) => {
   return { accessToken };
 };
 
+const createOrganizationAccounts = async (email: string) => {
+  const isUserExistByEmail = await prisma.user.findUnique({
+    where: { email: email },
+  });
+
+  if (isUserExistByEmail) {
+    throw new ApiError(
+      status.BAD_REQUEST,
+      `User with this email: ${email} already exists!`
+    );
+  }
+
+
+  const generateOTP = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  await prisma.otpModel.deleteMany({
+    where: {
+      email: email.toLowerCase().trim(),
+      isVerified: false
+    }
+  });
+
+  const otp = generateOTP();
+  const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+
+  await prisma.otpModel.create({
+    data: {
+      email: email.toLowerCase().trim(),
+      code: otp,
+      expiresAt: otpExpiresAt,
+      isVerified: false,
+    },
+  });
+
+  
+  const emailContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Email Verification</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+              
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                  <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300;">
+                    Email Verification
+                  </h1>
+                  <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+                    Secure your account with OTP verification
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                    Hello there,
+                  </p>
+                  
+                  <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                    We received a request to verify your email address. Please use the following verification code to proceed:
+                  </p>
+
+                  <!-- OTP Box -->
+                  <div style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border: 2px solid #667eea; border-radius: 12px; padding: 30px; text-align: center; margin: 30px 0;">
+                    <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px;">
+                      Verification Code
+                    </p>
+                    <h1 style="color: #667eea; font-size: 36px; font-weight: bold; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">
+                      ${otp}
+                    </h1>
+                  </div>
+
+                  <!-- Important Info -->
+                  <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 30px 0;">
+                    <p style="color: #856404; font-size: 14px; margin: 0; line-height: 1.5;">
+                      <strong>⚠️ Important:</strong> This verification code will expire in <strong>10 minutes</strong>. 
+                      Please complete your verification before it expires.
+                    </p>
+                  </div>
+
+                  <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 20px 0;">
+                    If you didn't request this verification code, please ignore this email and ensure your account is secure.
+                  </p>
+
+                  <!-- Security Tips -->
+                  <div style="background-color: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 30px 0;">
+                    <h3 style="color: #333333; font-size: 16px; margin: 0 0 10px 0;">
+                      🔒 Security Tips:
+                    </h3>
+                    <ul style="color: #666666; font-size: 14px; margin: 0; padding-left: 20px;">
+                      <li style="margin: 5px 0;">Never share your verification code with anyone</li>
+                      <li style="margin: 5px 0;">We will never ask for your code via phone or email</li>
+                      <li style="margin: 5px 0;">Always verify the sender's email address</li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+                  <p style="color: #6c757d; font-size: 14px; margin: 0 0 10px 0;">
+                    Need help? Contact our support team
+                  </p>
+                  <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                    Best regards,<br>
+                    <strong style="color: #667eea;">Your App Team</strong>
+                  </p>
+                  
+                  <div style="margin-top: 20px;">
+                    <p style="color: #adb5bd; font-size: 12px; margin: 0;">
+                      This email was sent to ${email.toLowerCase().trim()}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const result = await sendEmail(email, "🔐 Email Verification Code - Action Required", emailContent);
+
+
+  return result
+};
+
+const verifyOrganizationOTP = async (otpCode: string, payload: User) => {
+  const isUserExistByEmail = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+
+  if (isUserExistByEmail) {
+    throw new ApiError(
+      status.BAD_REQUEST,
+      `User with this email: ${payload.email} already exists!`
+    );
+  }
+
+
+  if (!payload.email || !otpCode) {
+    throw new ApiError(status.BAD_REQUEST, "Email and OTP are required!");
+  }
+
+  if (otpCode.length !== 6) {
+    throw new ApiError(status.BAD_REQUEST, "OTP must be 6 digits!");
+  }
+  if (!payload) {
+    throw new ApiError(status.BAD_REQUEST, "payload is required !");
+  }
+
+  const normalizedEmail = payload.email.toLowerCase().trim();
+
+  const otpRecord = await prisma.otpModel.findFirst({
+    where: {
+      email: payload.email,
+      isVerified: false
+    },
+    orderBy: {
+      generatedAt: 'desc'
+    }
+  });
+  console.log(otpRecord)
+
+  if (!otpRecord) {
+    throw new ApiError(status.NOT_FOUND, "OTP not found or already used. Please request a new OTP.");
+  }
+
+ 
+  if (new Date() > otpRecord?.expiresAt) {
+
+    await prisma.otpModel.delete({
+      where: { id: otpRecord.id }
+    });
+
+    throw new ApiError(status.UNAUTHORIZED, "OTP has expired. Please request a new verification code.");
+  }
+
+  if (otpRecord.code !== otpCode.trim()) {
+    throw new ApiError(status.UNAUTHORIZED, "Invalid OTP. Please check the code and try again.");
+  }
+
+  const result = await prisma.otpModel.update({
+    where: { id: otpRecord.id },
+    data: {
+      isVerified: true
+    }
+  });
+
+  const hashedPassword = await hashPassword(payload.password);
+
+  const userData = {
+    ...payload,
+    password: hashedPassword,
+    isVerified: true,
+    role: UserRole.ORGANIZATION
+  };
+
+
+  const user = await prisma.user.create({ data: userData });
+
+  const jwtPayload = {
+    id: user.id,
+    fullName: payload.fullName,
+    email: user.email,
+    role: user.role,
+    profilePic: user?.profilePic || "",
+    isVerified: user.isVerified,
+    isSubscribed: user.isSubscribed
+
+  };
+
+  const accessToken = jwtHelpers.createToken(
+    jwtPayload,
+    config.jwt.access.secret as string,
+    config.jwt.access.expiresIn as string
+  );
+  const refreshToken = jwtHelpers.createToken(
+    jwtPayload,
+    config.jwt.refresh.secret as string,
+    config.jwt.refresh.expiresIn as string
+  );
+
+  const successEmailContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Email Verified Successfully</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+              
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 40px 30px; text-align: center;">
+                  <div style="background-color: rgba(255,255,255,0.2); border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 40px;">✅</span>
+                  </div>
+                  <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300;">
+                    Email Verified Successfully!
+                  </h1>
+                  <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+                    Your email verification is now complete
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 style="color: #28a745; font-size: 24px; margin: 0 0 10px 0;">
+                      🎉 Congratulations!
+                    </h2>
+                    <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0;">
+                      Your email address has been successfully verified.
+                    </p>
+                  </div>
+
+                  <!-- Verification Details -->
+                  <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0;">
+                    <p style="color: #495057; font-size: 14px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px;">
+                      Verified Email Address
+                    </p>
+                    <p style="color: #28a745; font-size: 18px; font-weight: bold; margin: 0; word-break: break-all;">
+                      ${normalizedEmail}
+                    </p>
+                    <p style="color: #6c757d; font-size: 12px; margin: 15px 0 0 0;">
+                      Verified on ${new Date().toLocaleString()}
+                    </p>
+                  </div>
+
+                  <!-- Success Message -->
+                  <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 30px 0;">
+                    <p style="color: #155724; font-size: 16px; margin: 0; line-height: 1.5; text-align: center;">
+                      <strong>✨ Great!</strong> You can now access all features of your account. 
+                      Your email verification is complete and secure.
+                    </p>
+                  </div>
+
+                  <div style="text-align: center; margin: 30px 0;">
+                    <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0;">
+                      Thank you for verifying your email address. Your account is now fully activated and ready to use.
+                    </p>
+                  </div>
+
+                  <!-- Next Steps -->
+                  <div style="background-color: #f8f9fa; border-left: 4px solid #28a745; padding: 20px; margin: 30px 0;">
+                    <h3 style="color: #333333; font-size: 16px; margin: 0 0 15px 0;">
+                      🚀 What's Next?
+                    </h3>
+                    <ul style="color: #666666; font-size: 14px; margin: 0; padding-left: 20px;">
+                      <li style="margin: 8px 0;">Complete your profile setup</li>
+                      <li style="margin: 8px 0;">Explore all available features</li>
+                      <li style="margin: 8px 0;">Secure your account with two-factor authentication</li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+                  <p style="color: #6c757d; font-size: 14px; margin: 0 0 10px 0;">
+                    Need assistance? Our support team is here to help
+                  </p>
+                  <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                    Welcome to the team!<br>
+                    <strong style="color: #28a745;">Your App Team</strong>
+                  </p>
+                  
+                  <div style="margin-top: 20px;">
+                    <p style="color: #adb5bd; font-size: 12px; margin: 0;">
+                      This confirmation was sent to ${normalizedEmail}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const results = sendEmail(normalizedEmail, "✅ Email Verified Successfully - Welcome!", successEmailContent)
+    .catch(error => console.error('Failed to send success email:', error));
+
+  return { accessToken }
+
+};
+
 export const AuthService = {
   getMe,
   loginUser,
@@ -941,5 +1293,7 @@ export const AuthService = {
 otpGenerate,
 verifyOTP,
 googleLogin,
+createOrganizationAccounts,
+verifyOrganizationOTP
 
 };

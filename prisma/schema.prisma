@@ -29,6 +29,7 @@ model User {
   Profile                   Profile?
   Subscription              Subscription?
   review Review[]
+  artwork Artwork[]
   @@map("users")
 }
 
@@ -128,6 +129,30 @@ model Review {
 }
 
 
+
+model Artwork {
+  id                    String      @id @default(uuid())
+  userId              String                  
+  title                 String
+  year                  String                  
+  framed                Boolean            
+  size                  String                 
+  medium                String               
+  forSale               Boolean   @default(false) 
+  price                 Decimal                
+  purchaseLink          String                 
+  series                String               
+  uniqueLimitedEdition  String                
+  altText               String                
+  shortDescription      String                
+  imageUrl              String        
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)        
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@map("artworks")
+}
+
+
 enum NotificationType {
   SUBMISSION
   FEEDBACK
@@ -156,6 +181,7 @@ enum UserRole {
   USER
   ADMIN
   SUPER_ADMIN
+  ORGANIZATION
 }
 enum PlanType {
   FAMILY

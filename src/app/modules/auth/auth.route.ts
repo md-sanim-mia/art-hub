@@ -15,6 +15,12 @@ router.post('/register-user',AuthController.otpGenerate
 
 router.post('/verify-otp',AuthController.otpVerify
 )
+
+router.post('/register-organization',AuthController.createOrganizationAccounts
+)
+
+router.post('/verify-organization-otp',AuthController.verifyOrganizationOTP
+)
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 router.get(
   "/google/callback",
@@ -70,3 +76,4 @@ router.get("/me", auth(), AuthController.getMe);
 router.post("/refresh-token", AuthController.refreshToken);
 
 export const AuthRoutes = router;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

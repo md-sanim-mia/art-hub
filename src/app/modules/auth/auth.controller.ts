@@ -193,6 +193,43 @@ const googleLogin = catchAsync(async (req, res) => {
   });
 });
 
+
+const createOrganizationAccounts = catchAsync(async (req, res) => {
+
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  const result = await AuthService.createOrganizationAccounts(email)
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "We have sent a 6-digit verification code to your email address. Please check your inbox and use the code to complete verification.",
+  })
+})
+const verifyOrganizationOTP = catchAsync(async (req, res) => {
+
+  const { otpCode, data } = req.body;
+
+  console.log(req.body)
+  if (!data.email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+  if (!data.password) {
+    return res.status(400).json({ message: "Password is required" });
+  }
+
+  const result = await AuthService.verifyOrganizationOTP(otpCode, data)
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Email verification completed successfully! Your account is now verified.",
+    data: result
+  })
+})
+
 export const AuthController = {
   login,
   getMe,
@@ -205,7 +242,11 @@ export const AuthController = {
   resendResetPassLink,
   resendVerificationLink,
   verifyResetPasswordOTP,
-otpGenerate,
-otpVerify,
-googleLogin,
+ otpGenerate,
+ otpVerify,
+ googleLogin,
+ createOrganizationAccounts,
+ verifyOrganizationOTP
+
+
 };
